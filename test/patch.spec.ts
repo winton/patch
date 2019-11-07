@@ -1,5 +1,5 @@
-import load from "@loaded/loaded"
 import fn2 from "fn2"
+import load from "@fn2/loaded"
 import tinyId from "@fn2/tiny-id"
 
 import expect from "./expect"
