@@ -1,7 +1,7 @@
 {
-  "name": "@winton/patch",
+  "name": "@fn2/patch",
   "version": "0.0.1",
-  "description": "Function patcher",
+  "description": "Function patcher 🧵",
   "main": "dist/cjs/index.js",
   "scripts": {
     "build": "./bin/build",
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/winton/patch.git"
   },
-  "author": " <>",
+  "author": "Winton Welsh <mail@wintoni.us>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/winton/patch/issues"
@@ -43,9 +43,7 @@
     "ts-node": "8.4.1",
     "typescript": "3.7.2"
   },
-  "dependencies": {
-    "uninstall": "0.0.0"
-  },
+  "dependencies": {},
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged && npm test"
