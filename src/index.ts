@@ -1,11 +1,17 @@
 import fn2 from "fn2"
 import tinyId from "@fn2/tiny-id"
 
+interface Patches {
+  id: string
+  fn: Function
+  memo: Record<string, any>
+}
+
 export class Patch {
   fn2: typeof fn2 = null
   tinyId: typeof tinyId = null
 
-  patches: [string, Function][] = []
+  patches: Patches[] = []
   steps: Record<string, Record<string, any>[]> = {}
 
   create(
@@ -15,9 +21,22 @@ export class Patch {
   ): Record<string, any> {
     const id = this.tinyId.generate()
     const memo = this.update(id, ...steps)
-    const [, fn] = this.findPatch(id)
+
+    const fn = (...args: any[]): Promise<any> | any => {
+      const out = this.fn2(memo, args, ...this.steps[id])
+      const returnFnId = this.returnFnId(id)
+
+      if (out.then) {
+        return out.then(
+          (out: Record<string, any>) => out[returnFnId]
+        )
+      } else {
+        return out[returnFnId]
+      }
+    }
 
     instance[fnName] = fn
+    this.patches = this.patches.concat({ id, fn, memo })
 
     return memo
   }
@@ -36,15 +55,16 @@ export class Patch {
     idOrFn: string | Function,
     ...steps: Record<string, any>[]
   ): Record<string, any> {
-    const memo = {}
-
     let id: string
+    let fn: Function
+    let memo: Record<string, any>
 
     if (typeof idOrFn === "string") {
       id = idOrFn
+      memo = {}
     } else {
-      ;[id] = this.findPatch(idOrFn)
-      this.removePatch(idOrFn)
+      ;({ id, fn, memo } = this.find(idOrFn))
+      this.remove(idOrFn)
     }
 
     this.steps[id] = this.steps[id] || []
@@ -52,40 +72,32 @@ export class Patch {
       .concat(this.fillSteps(steps))
       .sort(this.sortSteps)
 
-    const returnFnId = this.returnFnId(id)
-
-    const fn = (...args: any[]): Promise<any> | any => {
-      const out = this.fn2(memo, args, ...this.steps[id])
-
-      if (out.then) {
-        return out.then(
-          (out: Record<string, any>) => out[returnFnId]
-        )
-      } else {
-        return out[returnFnId]
-      }
+    if (fn) {
+      this.patches = this.patches.concat({ id, fn, memo })
     }
 
-    this.patches = this.patches.concat([[id, fn]])
-
     return memo
+  }
+
+  find(id: string): Patches
+  find(fn: Function): Patches
+  find(fnOrString: Function | string): Patches {
+    return this.patches.find(({ id, fn }) => {
+      return typeof fnOrString === "string"
+        ? fnOrString === id
+        : fnOrString === fn
+    })
+  }
+
+  remove(fn: Function): void {
+    this.patches = this.patches.filter(
+      ({ fn: f }) => fn !== f
+    )
   }
 
   reset(): void {
     this.patches = []
     this.steps = {}
-  }
-
-  private findPatch(id: string): [string, Function]
-  private findPatch(fn: Function): [string, Function]
-  private findPatch(
-    fnOrString: Function | string
-  ): [string, Function] {
-    return this.patches.find(([id, fn]) => {
-      return typeof fnOrString === "string"
-        ? fnOrString === id
-        : fnOrString === fn
-    })
   }
 
   private fillSteps(
@@ -106,10 +118,6 @@ export class Patch {
     }
 
     return steps
-  }
-
-  private removePatch(fn: Function): void {
-    this.patches = this.patches.filter(([, f]) => fn !== f)
   }
 
   private returnFnId(id: string): string {

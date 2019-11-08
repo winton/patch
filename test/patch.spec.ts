@@ -9,7 +9,7 @@ load(fn2, { fn2, patch, tinyId })
 beforeEach(() => patch.reset())
 
 it("patches", () => {
-  expect.assertions(7)
+  expect.assertions(8)
 
   let calls = []
 
@@ -48,11 +48,27 @@ it("patches", () => {
 
   calls = []
 
-  patch.update(a.patchMe, {
-    fn: (hi: string) => calls.push(-2),
-    order: -2,
-  })
+  patch.update(
+    a.patchMe,
+    {
+      fn: (hi: string) => calls.push(-2),
+      order: -2,
+    },
+    {
+      after: (hi: string) => {
+        calls.push(2)
+        return 2
+      },
+      order: 2,
+    }
+  )
 
   a.patchMe("hi")
-  expect(calls).toEqual([-2, -1, 1])
+  expect(calls).toEqual([-2, -1, 1, 2])
+
+  expect(patch.find(a.patchMe).memo).toEqual({
+    fn: undefined,
+    patchMe: true,
+    after: 2,
+  })
 })
