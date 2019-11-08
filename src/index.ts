@@ -135,7 +135,7 @@ export class Patch {
     }
 
     return Object.keys(mainFn).find(
-      key => ["order", "return"].indexOf(key) < 0
+      key => ["args", "order", "return"].indexOf(key) < 0
     )
   }
 
