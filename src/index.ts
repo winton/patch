@@ -4,6 +4,8 @@ import tinyId from "@fn2/tiny-id"
 export class Patch {
   fn2: typeof fn2 = null
   tinyId: typeof tinyId = null
+
+  patches: [string, Function][] = []
   steps: Record<string, Record<string, any>[]> = {}
 
   create(
@@ -11,35 +13,48 @@ export class Patch {
     fnName: string,
     ...steps: Record<string, any>[]
   ): Record<string, any> {
-    const memo = {}
     const id = this.tinyId.generate()
-    const fn = this.add(id, memo, ...steps)
-
-    fn["patch"] = (
-      memo: Record<string, any>,
-      ...steps: Record<string, any>[]
-    ): Function => {
-      return this.add(id, memo, ...steps)
-    }
+    const memo = this.update(id, ...steps)
+    const [, fn] = this.findPatch(id)
 
     instance[fnName] = fn
 
     return memo
   }
 
-  add(
+  update(
     id: string,
-    memo: Record<string, any>,
     ...steps: Record<string, any>[]
-  ): Function {
+  ): Record<string, any>
+
+  update(
+    fn: Function,
+    ...steps: Record<string, any>[]
+  ): Record<string, any>
+
+  update(
+    idOrFn: string | Function,
+    ...steps: Record<string, any>[]
+  ): Record<string, any> {
+    const memo = {}
+
+    let id: string
+
+    if (typeof idOrFn === "string") {
+      id = idOrFn
+    } else {
+      ;[id] = this.findPatch(idOrFn)
+      this.removePatch(idOrFn)
+    }
+
     this.steps[id] = this.steps[id] || []
-    this.steps[id] = this.steps[id].concat(
-      this.fillSteps(steps).sort(this.sortSteps)
-    )
+    this.steps[id] = this.steps[id]
+      .concat(this.fillSteps(steps))
+      .sort(this.sortSteps)
 
     const returnFnId = this.returnFnId(id)
 
-    return (...args: any[]): Promise<any> | any => {
+    const fn = (...args: any[]): Promise<any> | any => {
       const out = this.fn2(memo, args, ...this.steps[id])
 
       if (out.then) {
@@ -50,10 +65,27 @@ export class Patch {
         return out[returnFnId]
       }
     }
+
+    this.patches = this.patches.concat([[id, fn]])
+
+    return memo
   }
 
   reset(): void {
+    this.patches = []
     this.steps = {}
+  }
+
+  private findPatch(id: string): [string, Function]
+  private findPatch(fn: Function): [string, Function]
+  private findPatch(
+    fnOrString: Function | string
+  ): [string, Function] {
+    return this.patches.find(([id, fn]) => {
+      return typeof fnOrString === "string"
+        ? fnOrString === id
+        : fnOrString === fn
+    })
   }
 
   private fillSteps(
@@ -76,8 +108,13 @@ export class Patch {
     return steps
   }
 
+  private removePatch(fn: Function): void {
+    this.patches = this.patches.filter(([, f]) => fn !== f)
+  }
+
   private returnFnId(id: string): string {
     const mainFn = this.steps[id]
+      .concat([])
       .reverse()
       .find(
         step => step.order === 0 || step.return === true
@@ -85,7 +122,7 @@ export class Patch {
 
     if (!mainFn) {
       throw new Error(
-        "Provide a return step with either { order: 0 } or { return: true }."
+        "Provide a return step with { order: 0 } or { return: true }."
       )
     }
 

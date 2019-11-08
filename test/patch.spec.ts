@@ -5,12 +5,13 @@ import tinyId from "@fn2/tiny-id"
 import expect from "./expect"
 import patch from "../src"
 
+load(fn2, { fn2, patch, tinyId })
 beforeEach(() => patch.reset())
 
 it("patches", () => {
-  expect.assertions(2)
+  expect.assertions(7)
 
-  load(fn2, { fn2, patch, tinyId })
+  let calls = []
 
   class A {
     patchMe(hi: string): boolean {
@@ -24,14 +25,34 @@ it("patches", () => {
     a,
     "patchMe",
     {
-      fn: (hi: string) => expect(hi).toBe("hi"),
+      fn: (hi: string) => {
+        expect(hi).toBe("hi")
+        calls.push(-1)
+      },
       order: -1,
     },
     {
       patchMe: a.patchMe.bind(a),
       order: 0,
+    },
+    {
+      fn: (hi: string) => {
+        expect(hi).toBe("hi")
+        calls.push(1)
+      },
     }
   )
 
   expect(a.patchMe("hi")).toBe(true)
+  expect(calls).toEqual([-1, 1])
+
+  calls = []
+
+  patch.update(a.patchMe, {
+    fn: (hi: string) => calls.push(-2),
+    order: -2,
+  })
+
+  a.patchMe("hi")
+  expect(calls).toEqual([-2, -1, 1])
 })
