@@ -1,4 +1,4 @@
-import fn2 from "fn2"
+import { fn2 } from "@fn2/loaded"
 import tinyId from "@fn2/tiny-id"
 
 interface Patches {
@@ -23,7 +23,11 @@ export class Patch {
     const memo = this.update(id, ...steps)
 
     const fn = (...args: any[]): Promise<any> | any => {
-      const out = this.fn2(memo, args, ...this.steps[id])
+      const out = this.fn2.run(
+        memo,
+        args,
+        ...this.steps[id]
+      )
       const returnFnId = this.returnFnId(id)
 
       if (out.then) {
