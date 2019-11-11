@@ -7,18 +7,18 @@ import patch from "../src"
 load({ patch, tinyId })
 beforeEach(() => patch.reset())
 
+class A {
+  patchMe(hi: string): boolean {
+    return true
+  }
+}
+
+const a = new A()
+
 it("patches", () => {
-  expect.assertions(8)
+  expect.assertions(9)
 
   let calls = []
-
-  class A {
-    patchMe(hi: string): boolean {
-      return true
-    }
-  }
-
-  const a = new A()
 
   patch.create(
     a,
@@ -59,10 +59,11 @@ it("patches", () => {
         return 2
       },
       order: 2,
+      return: true,
     }
   )
 
-  a.patchMe("hi")
+  expect(a.patchMe("hi")).toBe(2)
   expect(calls).toEqual([-2, -1, 1, 2])
 
   expect(patch.find(a.patchMe).memo).toEqual({
@@ -70,4 +71,8 @@ it("patches", () => {
     patchMe: true,
     after: 2,
   })
+})
+
+it("resets", () => {
+  expect(a.patchMe("")).toBe(true)
 })

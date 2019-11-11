@@ -7,12 +7,23 @@ interface Patches {
   memo: Record<string, any>
 }
 
+interface Originals {
+  instance: any
+  fnName: string
+  fn: Function
+}
+
 export class Patch {
   fn2: typeof fn2 = null
   tinyId: typeof tinyId = null
 
-  patches: Patches[] = []
-  steps: Record<string, Record<string, any>[]> = {}
+  originals: Originals[]
+  patches: Patches[]
+  steps: Record<string, Record<string, any>[]>
+
+  constructor() {
+    this.reset()
+  }
 
   create(
     instance: any,
@@ -39,8 +50,19 @@ export class Patch {
       }
     }
 
+    this.originals = this.originals.concat({
+      fn: instance[fnName],
+      fnName,
+      instance,
+    })
+
     instance[fnName] = fn
-    this.patches = this.patches.concat({ id, fn, memo })
+
+    this.patches = this.patches.concat({
+      id,
+      fn,
+      memo,
+    })
 
     return memo
   }
@@ -100,6 +122,14 @@ export class Patch {
   }
 
   reset(): void {
+    if (this.originals) {
+      for (const { instance, fnName, fn } of this
+        .originals) {
+        instance[fnName] = fn
+      }
+    }
+
+    this.originals = []
     this.patches = []
     this.steps = {}
   }
@@ -139,7 +169,10 @@ export class Patch {
     }
 
     return Object.keys(mainFn).find(
-      key => ["args", "order", "return"].indexOf(key) < 0
+      key =>
+        ["args", "order", "returnArgs", "return"].indexOf(
+          key
+        ) < 0
     )
   }
 
