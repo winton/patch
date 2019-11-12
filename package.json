@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/winton/patch#readme",
   "devDependencies": {
-    "@fn2/loaded": "0.17.0",
+    "@fn2/loaded": "0.20.0",
     "@fn2/tiny-id": "0.4.0",
     "@types/mocha": "5.2.7",
     "@types/node": "12.12.7",

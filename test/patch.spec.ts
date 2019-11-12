@@ -1,10 +1,10 @@
-import load from "@fn2/loaded"
+import loaded from "@fn2/loaded"
 import tinyId from "@fn2/tiny-id"
 
 import expect from "./expect"
 import patch from "../src"
 
-load({ patch, tinyId })
+loaded.load({ patch, tinyId })
 beforeEach(() => patch.reset())
 
 class A {

@@ -1,4 +1,4 @@
-import { fn2 } from "@fn2/loaded"
+import { Fn2 } from "@fn2/loaded"
 import tinyId from "@fn2/tiny-id"
 
 interface Patches {
@@ -14,7 +14,7 @@ interface Originals {
 }
 
 export class Patch {
-  fn2: typeof fn2 = null
+  fn2: Fn2 = null
   tinyId: typeof tinyId = null
 
   originals: Originals[]
